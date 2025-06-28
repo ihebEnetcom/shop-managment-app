@@ -1,10 +1,9 @@
 import { Dashboard } from '@/components/dashboard';
-import { initialProducts, initialSales } from '@/lib/data';
-import type { Product, Sale } from '@/lib/types';
+import { getProducts, getSales } from '@/lib/actions';
 
-export default function Home() {
-  const products: Product[] = initialProducts;
-  const sales: Sale[] = initialSales;
+export default async function Home() {
+  const products = await getProducts();
+  const sales = await getSales();
 
   return <Dashboard products={products} sales={sales} />;
 }

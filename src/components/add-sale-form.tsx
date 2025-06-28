@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import type { Product, Sale, SaleItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,12 +25,13 @@ import { PlusCircle, Trash2 } from 'lucide-react';
 
 type AddSaleFormProps = {
   products: Product[];
-  addSale: (newSale: Omit<Sale, 'id' | 'date'>) => void;
+  addSaleAction: (newSale: Omit<Sale, 'id' | 'date'>) => Promise<any>;
   setDialogOpen: (open: boolean) => void;
 };
 
-export function AddSaleForm({ products, addSale, setDialogOpen }: AddSaleFormProps) {
+export function AddSaleForm({ products, addSaleAction, setDialogOpen }: AddSaleFormProps) {
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
@@ -47,13 +48,31 @@ export function AddSaleForm({ products, addSale, setDialogOpen }: AddSaleFormPro
 
     const product = products.find((p) => p.id === selectedProductId);
     if (!product) return;
+    
+    if (product.stock < quantity) {
+        toast({
+            title: 'Not enough stock',
+            description: `Only ${product.stock} of ${product.name} left in stock.`,
+            variant: 'destructive'
+        });
+        return;
+    }
 
     const existingItem = saleItems.find((item) => item.productId === product.id);
     if (existingItem) {
+        const newQuantity = existingItem.quantity + quantity;
+        if(product.stock < newQuantity) {
+            toast({
+                title: 'Not enough stock',
+                description: `Cannot add ${quantity} more. Only ${product.stock - existingItem.quantity} of ${product.name} left in stock.`,
+                variant: 'destructive'
+            });
+            return;
+        }
       setSaleItems(
         saleItems.map((item) =>
           item.productId === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: newQuantity }
             : item
         )
       );
@@ -91,12 +110,23 @@ export function AddSaleForm({ products, addSale, setDialogOpen }: AddSaleFormPro
       });
       return;
     }
-    addSale({ items: saleItems, total });
-    toast({
-      title: 'Sale Recorded!',
-      description: `A new sale of $${total.toFixed(2)} has been successfully recorded.`,
+    
+    startTransition(async () => {
+        const result = await addSaleAction({ items: saleItems, total });
+        if(result?.error) {
+             toast({
+                title: 'Error',
+                description: result.error,
+                variant: 'destructive',
+            });
+        } else {
+            toast({
+                title: 'Sale Recorded!',
+                description: `A new sale of $${total.toFixed(2)} has been successfully recorded.`,
+            });
+            setDialogOpen(false);
+        }
     });
-    setDialogOpen(false);
   };
 
   return (
@@ -107,9 +137,9 @@ export function AddSaleForm({ products, addSale, setDialogOpen }: AddSaleFormPro
             <SelectValue placeholder="Select a product" />
           </SelectTrigger>
           <SelectContent>
-            {products.map((product) => (
+            {products.filter(p => p.stock > 0).map((product) => (
               <SelectItem key={product.id} value={product.id}>
-                {product.name}
+                {product.name} ({product.stock} in stock)
               </SelectItem>
             ))}
           </SelectContent>
@@ -122,7 +152,7 @@ export function AddSaleForm({ products, addSale, setDialogOpen }: AddSaleFormPro
           className="w-full sm:w-24"
           placeholder="Qty"
         />
-        <Button onClick={handleAddItem} className="w-full sm:w-auto">
+        <Button onClick={handleAddItem} className="w-full sm:w-auto" disabled={!selectedProductId}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add
         </Button>
@@ -175,8 +205,8 @@ export function AddSaleForm({ products, addSale, setDialogOpen }: AddSaleFormPro
       </div>
 
       <div className="flex justify-end pt-2">
-        <Button onClick={handleSubmit} size="lg" disabled={saleItems.length === 0}>
-          Save Sale
+        <Button onClick={handleSubmit} size="lg" disabled={saleItems.length === 0 || isPending}>
+          {isPending ? 'Saving...' : 'Save Sale'}
         </Button>
       </div>
     </div>

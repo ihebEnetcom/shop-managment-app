@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types';
+import { useTransition } from 'react';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
@@ -25,12 +26,14 @@ const productSchema = z.object({
 });
 
 type AddProductFormProps = {
-  addProduct: (newProduct: Omit<Product, 'id'>) => void;
+  addProductAction: (newProduct: Omit<Product, 'id'>) => Promise<any>;
   setDialogOpen: (open: boolean) => void;
 };
 
-export function AddProductForm({ addProduct, setDialogOpen }: AddProductFormProps) {
+export function AddProductForm({ addProductAction, setDialogOpen }: AddProductFormProps) {
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -43,13 +46,27 @@ export function AddProductForm({ addProduct, setDialogOpen }: AddProductFormProp
   });
 
   function onSubmit(values: z.infer<typeof productSchema>) {
-    addProduct(values);
-    toast({
-      title: 'Success!',
-      description: `Product "${values.name}" has been added.`,
-      variant: 'default',
+    startTransition(async () => {
+      const result = await addProductAction(values);
+      if (result?.error) {
+        if (result.error.barcode) {
+          form.setError('barcode', { message: result.error.barcode[0] });
+        } else {
+            toast({
+            title: 'Error',
+            description: 'Something went wrong.',
+            variant: 'destructive',
+          });
+        }
+      } else {
+        toast({
+          title: 'Success!',
+          description: `Product "${values.name}" has been added.`,
+          variant: 'default',
+        });
+        setDialogOpen(false);
+      }
     });
-    setDialogOpen(false);
   }
 
   return (
@@ -123,7 +140,9 @@ export function AddProductForm({ addProduct, setDialogOpen }: AddProductFormProp
           )}
         />
         <div className="flex justify-end pt-2">
-            <Button type="submit">Add Product</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Adding...' : 'Add Product'}
+            </Button>
         </div>
       </form>
     </Form>

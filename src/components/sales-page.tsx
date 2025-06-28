@@ -23,6 +23,7 @@ import { AddSaleForm } from './add-sale-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { addSale } from '@/lib/actions';
 
 type SalesPageProps = {
   initialSales: Sale[];
@@ -30,19 +31,7 @@ type SalesPageProps = {
 };
 
 export function SalesPage({ initialSales, allProducts }: SalesPageProps) {
-  const [sales, setSales] = useState<Sale[]>(initialSales);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const addSale = (newSale: Omit<Sale, 'id' | 'date'>) => {
-    setSales((prev) => [
-      {
-        ...newSale,
-        id: `s${prev.length + 1}`,
-        date: new Date(),
-      },
-      ...prev,
-    ]);
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,7 +50,7 @@ export function SalesPage({ initialSales, allProducts }: SalesPageProps) {
             </DialogHeader>
             <AddSaleForm
               products={allProducts}
-              addSale={addSale}
+              addSaleAction={addSale}
               setDialogOpen={setIsDialogOpen}
             />
           </DialogContent>
@@ -82,8 +71,8 @@ export function SalesPage({ initialSales, allProducts }: SalesPageProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.length > 0 ? (
-                  sales.map((sale) => (
+                {initialSales.length > 0 ? (
+                  initialSales.map((sale) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-medium">
                         {format(sale.date, 'PPpp')}

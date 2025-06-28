@@ -22,30 +22,23 @@ import {
 } from '@/components/ui/dialog';
 import { AddProductForm } from './add-product-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { addProduct } from '@/lib/actions';
 
 type ProductsPageProps = {
   initialProducts: Product[];
 };
 
 export function ProductsPage({ initialProducts }: ProductsPageProps) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(
+    return initialProducts.filter(
       (product) =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.barcode.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [products, searchTerm]);
-
-  const addProduct = (newProduct: Omit<Product, 'id'>) => {
-    setProducts((prev) => [
-      ...prev,
-      { ...newProduct, id: `p${prev.length + 1}` },
-    ]);
-  };
+  }, [initialProducts, searchTerm]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,7 +55,7 @@ export function ProductsPage({ initialProducts }: ProductsPageProps) {
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
             </DialogHeader>
-            <AddProductForm addProduct={addProduct} setDialogOpen={setIsDialogOpen} />
+            <AddProductForm addProductAction={addProduct} setDialogOpen={setIsDialogOpen} />
           </DialogContent>
         </Dialog>
       </div>

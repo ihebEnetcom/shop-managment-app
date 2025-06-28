@@ -1,6 +1,7 @@
 import { ProductsPage } from '@/components/products-page';
-import { initialProducts } from '@/lib/data';
+import { getProducts } from '@/lib/actions';
 
-export default function ProductsRoute() {
+export default async function ProductsRoute() {
+  const initialProducts = await getProducts();
   return <ProductsPage initialProducts={initialProducts} />;
 }

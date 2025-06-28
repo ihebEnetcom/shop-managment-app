@@ -1,6 +1,8 @@
 import { SalesPage } from '@/components/sales-page';
-import { initialProducts, initialSales } from '@/lib/data';
+import { getProducts, getSales } from '@/lib/actions';
 
-export default function SalesRoute() {
-  return <SalesPage initialSales={initialSales} allProducts={initialProducts} />;
+export default async function SalesRoute() {
+  const initialSales = await getSales();
+  const allProducts = await getProducts();
+  return <SalesPage initialSales={initialSales} allProducts={allProducts} />;
 }
