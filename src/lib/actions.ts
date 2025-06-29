@@ -13,6 +13,10 @@ const productSchema = z.object({
   stock: z.coerce.number().int().min(0, 'Stock cannot be negative'),
 });
 
+const fullProductSchema = productSchema.extend({
+    id: z.string(),
+});
+
 const saleItemSchema = z.object({
   productId: z.string(),
   productName: z.string(),
@@ -72,6 +76,30 @@ export async function addProduct(values: Omit<Product, 'id'>) {
         }
         console.error('Failed to add product:', error);
         return { error: { _form: ['Could not add product.'] } };
+    }
+}
+
+export async function updateProduct(values: Product) {
+    const parsed = fullProductSchema.safeParse(values);
+    if (!parsed.success) {
+        return { error: parsed.error.flatten().fieldErrors };
+    }
+
+    const { id, name, barcode, purchasePrice, salePrice, stock } = parsed.data;
+    
+    try {
+        const stmt = db.prepare('UPDATE products SET name = ?, barcode = ?, purchasePrice = ?, salePrice = ?, stock = ? WHERE id = ?');
+        stmt.run(name, barcode, purchasePrice, salePrice, stock, id);
+        
+        revalidatePath('/products');
+        revalidatePath('/');
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            return { error: { barcode: ['A product with this barcode already exists.'] } };
+        }
+        console.error('Failed to update product:', error);
+        return { error: { _form: ['Could not update product.'] } };
     }
 }
 
