@@ -122,7 +122,7 @@ export function AddSaleForm({ products, addSaleAction, setDialogOpen }: AddSaleF
         } else {
             toast({
                 title: 'Sale Recorded!',
-                description: `A new sale of $${total.toFixed(2)} has been successfully recorded.`,
+                description: `A new sale of DT ${total.toFixed(2)} has been successfully recorded.`,
             });
             setDialogOpen(false);
         }
@@ -177,7 +177,7 @@ export function AddSaleForm({ products, addSaleAction, setDialogOpen }: AddSaleF
                       <TableCell className="font-medium">{item.productName}</TableCell>
                       <TableCell className="text-center">{item.quantity}</TableCell>
                       <TableCell className="text-right">
-                        ${(item.salePrice * item.quantity).toFixed(2)}
+                        DT {(item.salePrice * item.quantity).toFixed(2)}
                       </TableCell>
                        <TableCell>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveItem(item.productId)}>
@@ -201,7 +201,7 @@ export function AddSaleForm({ products, addSaleAction, setDialogOpen }: AddSaleF
       
       <div className="flex items-center justify-between rounded-lg border bg-card p-4">
         <span className="text-lg font-semibold">Total:</span>
-        <span className="text-2xl font-bold text-primary">${total.toFixed(2)}</span>
+        <span className="text-2xl font-bold text-primary">DT {total.toFixed(2)}</span>
       </div>
 
       <div className="flex justify-end pt-2">

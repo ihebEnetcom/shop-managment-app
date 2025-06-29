@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import type { Product } from '@/lib/types';
 import {
   Table,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Edit, PlusCircle, Search } from 'lucide-react';
+import { Edit, PlusCircle, Search, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,10 +20,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddProductForm } from './add-product-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { addProduct, updateProduct } from '@/lib/actions';
+import { addProduct, updateProduct, deleteProduct } from '@/lib/actions';
 import { EditProductForm } from './edit-product-form';
+import { useToast } from '@/hooks/use-toast';
 
 type ProductsPageProps = {
   initialProducts: Product[];
@@ -33,6 +44,9 @@ export function ProductsPage({ initialProducts }: ProductsPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeletePending, startDeleteTransition] = useTransition();
+  const { toast } = useToast();
 
   const filteredProducts = useMemo(() => {
     return initialProducts.filter(
@@ -41,6 +55,27 @@ export function ProductsPage({ initialProducts }: ProductsPageProps) {
         product.barcode.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [initialProducts, searchTerm]);
+
+  const handleDeleteProduct = () => {
+    if (!productToDelete) return;
+
+    startDeleteTransition(async () => {
+      const result = await deleteProduct(productToDelete.id);
+      if (result?.error) {
+        toast({
+          title: 'Error',
+          description: result.error._form?.[0] || 'Could not delete product.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Product Deleted',
+          description: `"${productToDelete.name}" has been successfully deleted.`,
+        });
+      }
+      setProductToDelete(null);
+    });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -95,15 +130,18 @@ export function ProductsPage({ initialProducts }: ProductsPageProps) {
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.barcode}</TableCell>
                       <TableCell className="text-right">
-                        ${product.purchasePrice.toFixed(2)}
+                        DT {product.purchasePrice.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${product.salePrice.toFixed(2)}
+                        DT {product.salePrice.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">{product.stock}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingProduct(product)}>
+                      <TableCell className="flex justify-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingProduct(product)}>
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setProductToDelete(product)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -135,6 +173,24 @@ export function ProductsPage({ initialProducts }: ProductsPageProps) {
           )}
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              product "{productToDelete?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProduct} disabled={isDeletePending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeletePending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -34,7 +34,7 @@ export function SalesChart({ sales }: SalesChartProps) {
       </CardHeader>
       <CardContent>
         <ChartContainer config={{}} className="h-[300px] w-full">
-          <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+          <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="date"
@@ -46,12 +46,12 @@ export function SalesChart({ sales }: SalesChartProps) {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => `DT ${value}`}
             />
             <Tooltip
               cursor={false}
               content={<ChartTooltipContent
-                formatter={(value) => `$${(value as number).toFixed(2)}`}
+                formatter={(value) => `DT ${(value as number).toFixed(2)}`}
                 labelClassName="font-semibold"
                 indicator="dot"
               />}

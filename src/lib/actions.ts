@@ -103,6 +103,58 @@ export async function updateProduct(values: Product) {
     }
 }
 
+export async function deleteProduct(productId: string) {
+    try {
+        // Check if the product is part of any sale
+        const checkStmt = db.prepare('SELECT 1 FROM sale_items WHERE product_id = ? LIMIT 1');
+        const hasSales = checkStmt.get(productId);
+
+        if (hasSales) {
+            return { error: { _form: ['Cannot delete product because it has been sold. Consider setting stock to 0 instead.'] } };
+        }
+
+        const stmt = db.prepare('DELETE FROM products WHERE id = ?');
+        stmt.run(productId);
+        
+        revalidatePath('/products');
+        revalidatePath('/');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Failed to delete product:', error);
+        return { error: { _form: ['Could not delete product.'] } };
+    }
+}
+
+export async function deleteSale(saleId: string) {
+    const runTransaction = db.transaction(() => {
+        const itemsStmt = db.prepare('SELECT product_id, quantity FROM sale_items WHERE sale_id = ?');
+        const saleItems = itemsStmt.all(saleId) as { product_id: string; quantity: number }[];
+        
+        const updateStockStmt = db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?');
+        
+        for (const item of saleItems) {
+            updateStockStmt.run(item.quantity, item.product_id);
+        }
+
+        const deleteSaleStmt = db.prepare('DELETE FROM sales WHERE id = ?');
+        const result = deleteSaleStmt.run(saleId);
+
+        if (result.changes === 0) {
+            throw new Error(`Sale with ID ${saleId} not found.`);
+        }
+    });
+
+    try {
+        runTransaction();
+        revalidatePath('/sales');
+        revalidatePath('/products');
+        revalidatePath('/');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Failed to delete sale:', error);
+        return { error: error.message || 'Could not delete sale.' };
+    }
+}
 
 export async function addSale(values: Omit<Sale, 'id' | 'date'>) {
     const parsed = saleSchema.safeParse(values);
@@ -123,10 +175,17 @@ export async function addSale(values: Omit<Sale, 'id' | 'date'>) {
         const updateStockStmt = db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?');
         
         for (const item of items) {
+            // Check stock before reducing it
+            const product = db.prepare('SELECT stock FROM products WHERE id = ?').get(item.productId) as Product | undefined;
+            if (!product || product.stock < item.quantity) {
+                throw new Error(`Not enough stock for product ${item.productName}.`);
+            }
+            
             itemStmt.run(saleId, item.productId, item.productName, item.quantity, item.salePrice);
             const result = updateStockStmt.run(item.quantity, item.productId);
             if (result.changes === 0) {
-                throw new Error(`Product with ID ${item.productId} not found or out of stock.`);
+                // This case should ideally not be hit due to the check above, but it's a safeguard
+                throw new Error(`Product with ID ${item.productId} not found.`);
             }
         }
     });
