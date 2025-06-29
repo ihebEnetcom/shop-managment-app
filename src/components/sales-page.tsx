@@ -123,7 +123,7 @@ export function SalesPage({ initialSales, allProducts }: SalesPageProps) {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
-                        DT {sale.total.toFixed(2)}
+                        {sale.total.toFixed(2)} DT
                       </TableCell>
                       <TableCell className="text-center">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSaleToDelete(sale)}>

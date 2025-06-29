@@ -46,12 +46,12 @@ export function SalesChart({ sales }: SalesChartProps) {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => `DT ${value}`}
+              tickFormatter={(value) => `${value} DT`}
             />
             <Tooltip
               cursor={false}
               content={<ChartTooltipContent
-                formatter={(value) => `DT ${(value as number).toFixed(2)}`}
+                formatter={(value) => `${(value as number).toFixed(2)} DT`}
                 labelClassName="font-semibold"
                 indicator="dot"
               />}

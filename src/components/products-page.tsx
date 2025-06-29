@@ -130,10 +130,10 @@ export function ProductsPage({ initialProducts }: ProductsPageProps) {
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.barcode}</TableCell>
                       <TableCell className="text-right">
-                        DT {product.purchasePrice.toFixed(2)}
+                        {product.purchasePrice.toFixed(2)} DT
                       </TableCell>
                       <TableCell className="text-right">
-                        DT {product.salePrice.toFixed(2)}
+                        {product.salePrice.toFixed(2)} DT
                       </TableCell>
                       <TableCell className="text-right">{product.stock}</TableCell>
                       <TableCell className="flex justify-center gap-1">
