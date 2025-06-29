@@ -80,7 +80,7 @@ export function SalesPage({ initialSales, allProducts }: SalesPageProps) {
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {sale.items.map((item) => (
-                            <Badge key={item.productId} variant="secondary">
+                            <Badge key={item.id} variant="secondary">
                               {item.productName} (x{item.quantity})
                             </Badge>
                           ))}

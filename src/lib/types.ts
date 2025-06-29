@@ -8,6 +8,7 @@ export interface Product {
 }
 
 export interface SaleItem {
+  id?: number;
   productId: string;
   productName: string;
   quantity: number;
