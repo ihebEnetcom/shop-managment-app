@@ -3,13 +3,6 @@
 import { useState, useTransition } from 'react';
 import type { Product, Sale, SaleItem } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,7 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, PlusCircle, Trash2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 type AddSaleFormProps = {
   products: Product[];
@@ -35,6 +31,7 @@ export function AddSaleForm({ products, addSaleAction, setDialogOpen }: AddSaleF
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
+  const [openCombobox, setOpenCombobox] = useState(false)
 
   const handleAddItem = () => {
     if (!selectedProductId || quantity <= 0) {
@@ -132,18 +129,50 @@ export function AddSaleForm({ products, addSaleAction, setDialogOpen }: AddSaleF
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto_auto]">
-        <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a product" />
-          </SelectTrigger>
-          <SelectContent>
-            {products.filter(p => p.stock > 0).map((product) => (
-              <SelectItem key={product.id} value={product.id}>
-                {product.name} ({product.stock} in stock)
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={openCombobox}
+              className="w-full justify-between"
+            >
+              {selectedProductId
+                ? products.find((product) => product.id === selectedProductId)?.name
+                : "Select a product..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+            <Command>
+              <CommandInput placeholder="Search product..." />
+              <CommandEmpty>No product found.</CommandEmpty>
+              <CommandGroup>
+                <CommandList>
+                {products.filter(p => p.stock > 0).map((product) => (
+                  <CommandItem
+                    key={product.id}
+                    value={product.name}
+                    onSelect={() => {
+                      setSelectedProductId(product.id === selectedProductId ? "" : product.id)
+                      setOpenCombobox(false)
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedProductId === product.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {product.name} ({product.stock} in stock)
+                  </CommandItem>
+                ))}
+                </CommandList>
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
         <Input
           type="number"
           min="1"
